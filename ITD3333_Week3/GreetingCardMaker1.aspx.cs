@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Text;
+using System.ComponentModel;
 using System.Linq;
 using System.Web;
 using System.Web.UI;
@@ -12,16 +14,13 @@ public partial class GreetingCardMaker1 : System.Web.UI.Page
     {
         if (!this.IsPostBack)
         {
-            lstBackColor.Items.Add("White");
-            lstBackColor.Items.Add("Red");
-            lstBackColor.Items.Add("Green");
-            lstBackColor.Items.Add("Blue");
-            lstBackColor.Items.Add("Yellow");
+            string[] colorArray = Enum.GetNames(typeof(KnownColor));
+            lstBackColor.DataSource = colorArray;
+            lstBackColor.DataBind();
 
-            lstFontName.Items.Add("Times New Roman");
-            lstFontName.Items.Add("Arial");
-            lstFontName.Items.Add("Verdana");
-            lstFontName.Items.Add("Tahoma");
+            InstalledFontCollection fonts = new InstalledFontCollection();
+            foreach (FontFamily family in fonts.Families) { 
+                lstFontName.Items.Add(family.Name); }
 
             ListItem item = new ListItem();
             item.Text = BorderStyle.None.ToString();
@@ -40,22 +39,43 @@ public partial class GreetingCardMaker1 : System.Web.UI.Page
 
             lstBorder.SelectedIndex = 0;
 
-            imgDefault.ImageUrl = "default.png";
+            imgDefault.ImageUrl = "images/cake.jpg";
+            imgDefault.Visible = false;
         }
+        
     }
 
     protected void cmdUpdate_Click(object sender, EventArgs e)
     {
+        UpdateCard();
+    }
+
+    protected void ControlChanged(object sender, System.EventArgs e)
+    {
+        UpdateCard();
+    }
+
+    private void UpdateCard()
+    {
         pnlCard.BackColor = Color.FromName(lstBackColor.SelectedItem.Text);
         lblGreeting.Font.Name = lstFontName.SelectedItem.Text;
+        TypeConverter converter = TypeDescriptor.GetConverter(typeof(BorderStyle));
 
-        if(Int32.Parse(txtFontSize.Text) > 0)
+        //Added a try and catch block. App was breaking due to no default value entered into the font size
+        try
         {
-            lblGreeting.Font.Size = FontUnit.Point(Int32.Parse(txtFontSize.Text));
+            if (Int32.Parse(txtFontSize.Text) > 0)
+            {
+                lblGreeting.Font.Size = FontUnit.Point(Int32.Parse(txtFontSize.Text));
+            }
+        }
+        catch(Exception e)
+        {
+            txtFontSize.Text = "Please enter a font size";
         }
 
         int borderValue = Int32.Parse(lstBorder.SelectedItem.Value);
-        pnlCard.BorderStyle = (BorderStyle)borderValue;
+        pnlCard.BorderStyle = (BorderStyle)converter.ConvertFromString(lstBorder.SelectedItem.Text);
 
         if (chkPicture.Checked)
         {
